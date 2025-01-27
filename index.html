@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & User Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f3f3f3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .entrance {
+      text-align: center;
+    }
+
+    .entrance button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      background-color: #0095f6;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .entrance button:hover {
+      background-color: #007bbd;
+    }
+
+    .chat-container {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 90%;
+      max-width: 400px;
+      height: 600px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background-color: white;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-header {
+      background-color: #0095f6;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .message {
+      margin: 10px 0;
+      max-width: 70%;
+      padding: 10px;
+      border-radius: 15px;
+      display: inline-block;
+      word-wrap: break-word;
+    }
+
+    /* Admin messages */
+    .admin-message {
+      background-color: #ececec;
+      align-self: flex-end; /* Admin's message on the right side on Admin's page */
+    }
+
+    .user-message-admin {
+      background-color: #dcf8c6;
+      align-self: flex-start; /* User's message on the left side on Admin's page */
+    }
+
+    /* User messages */
+    .admin-message-user {
+      background-color: #ececec;
+      align-self: flex-start; /* Admin's message on the left side on User's page */
+    }
+
+    .user-message-user {
+      background-color: #dcf8c6;
+      align-self: flex-end; /* User's message on the right side on User's page */
+    }
+
+    /* Chat footer */
+    .chat-footer {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+    }
+
+    .chat-footer input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      outline: none;
+    }
+
+    .chat-footer button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      background-color: #0095f6;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .chat-footer button:hover {
+      background-color: #007bbd;
+    }
+
+    .clear-button {
+      background-color: #f44336;
+      color: white;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .clear-button:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="entrance">
+    <button onclick="openChat('Admin')">Admin Chat</button>
+    <button onclick="openChat('User')">User Chat</button>
+  </div>
+
+  <div id="chat-container" class="chat-container">
+    <div id="chat-header" class="chat-header">Admin Chat</div>
+    <div id="chat-body" class="chat-body"></div>
+    <div class="chat-footer">
+      <input id="chat-input" type="text" placeholder="Type your message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <button class="clear-button" onclick="clearChat()">Clear Chat</button>
+  </div>
+
+  <script>
+    let role = "";
+
+    function openChat(selectedRole) {
+      role = selectedRole;
+      document.querySelector('.entrance').style.display = 'none';
+      const chatContainer = document.getElementById('chat-container');
+      chatContainer.style.display = 'flex';
+      document.getElementById('chat-header').innerText = `${role} Chat`;
+
+      loadChatHistory();
+      
+      // Listen for changes in localStorage to reflect in real-time
+      window.addEventListener('storage', loadChatHistory);
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const messageText = input.value.trim();
+      if (messageText === "") return;
+
+      const chatBody = document.getElementById('chat-body');
+
+      const messageData = {
+        sender: role,
+        message: messageText,
+      };
+
+      // Save the message to the shared history
+      saveMessage(messageData);
+      
+      // Display the sent message
+      displayMessage(messageData);
+      
+      input.value = "";
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function saveMessage(messageData) {
+      const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+      chatHistory.push(messageData);
+      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    }
+
+    function loadChatHistory() {
+      const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+      const chatBody = document.getElementById('chat-body');
+      chatBody.innerHTML = "";
+
+      chatHistory.forEach(chat => {
+        displayMessage(chat);
+      });
+
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function displayMessage(chat) {
+      const chatBody = document.getElementById('chat-body');
+      const chatMessage = document.createElement('div');
+
+      // Display messages based on role and sender
+      if (chat.sender === 'Admin') {
+        if (role === 'Admin') {
+          chatMessage.className = 'admin-message'; // Admin's message on the right side on Admin page
+        } else {
+          chatMessage.className = 'admin-message-user'; // Admin's message on the left side on User page
+        }
+      } else {
+        if (role === 'User') {
+          chatMessage.className = 'user-message-user'; 
+        } else {
+          chatMessage.className = 'user-message-admin'; 
+        }
+      }
+
+      chatMessage.innerText = chat.message;
+      chatBody.appendChild(chatMessage);
+    }
+
+    function clearChat() {
+      localStorage.removeItem('chatHistory');
+      
+      // Clear the chat UI
+      const chatBody = document.getElementById('chat-body');
+      chatBody.innerHTML = "";
+    }
+  </script>
+</body>
+</html>
